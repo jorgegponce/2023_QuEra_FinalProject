@@ -1,0 +1,222 @@
+int qubits = 256;
+
+float[] atomsX = new float[qubits];
+float[] atomsY = new float[qubits];
+int[] verticesFirst = new int[(qubits)*(qubits-1)/2];
+int[] verticesSecond = new int[(qubits)*(qubits-1)/2];
+
+float blockadeRadius = 80.44, resolutionRadius = 40, minimumRowDistance = 40;
+
+int atomCounter = 0, vertexCounter = 0;
+
+
+boolean lattice = true;
+float latticeConstant = 40;
+
+PrintWriter output;
+String graph_name = "trial_graph";
+String path = "/Users/jorgegarciaponce/Projects/2023_QuEra_FinalProject/Graphs/";
+
+void setup() {
+  
+  output = createWriter( path + graph_name + ".txt"); 
+  size(800, 800);
+  rect(0,0,750,760);
+  
+  
+  if (lattice){
+    liebLattice(latticeConstant);
+  }
+}
+
+void draw() {
+  
+}
+
+void mousePressed() {
+  
+  float newPointX, newPointY;
+ 
+  // Position of point to be drawn
+  if (lattice){
+    
+    newPointX = mouseX - mouseX%latticeConstant;
+    newPointY = mouseY - mouseY%latticeConstant;
+  }
+  
+  else{
+    
+    newPointX=floor(mouseX);
+    newPointY=floor(mouseY);
+  }
+  
+  // first atom
+  if (atomCounter == 0){
+    drawNewPoint(newPointX, newPointY, blockadeRadius, resolutionRadius);
+    //rows = new float[1];
+    //rows[0] = newPointY;
+    //drawNewRow(newPointY);
+    // print(atomCounter);
+  }
+  
+  else{
+    
+    boolean draw = true;
+    
+    // First, we make it so that as many atoms as possible share the same row
+    
+    float rowDistance = 0;
+    for (int j = 0; j < atomCounter + 1; j = j+1) {
+        if (abs(newPointY - atomsY[j]) < minimumRowDistance){
+          rowDistance = newPointY - atomsY[j];
+        }
+    }
+    
+    newPointY = newPointY - rowDistance;
+    
+    //print("Minimum Row Distance");
+    //println(rowDistance);
+    
+    // Then, we check to see if they are still within the resolution radius
+    for (int k = 0; k < atomCounter + 1; k = k+1) {
+      
+      float pointDistance = distance(newPointX, newPointY, atomsX[k], atomsY[k]);
+      
+      //print("Checked distance: ");
+      //println(distance);
+      
+      if ((pointDistance < resolutionRadius)){
+        draw = false;
+        break;
+      }
+    }
+    
+      if (draw){
+        
+        // ( (abs(newPointY - atomsY[k])) < minimumRowDistance )
+        
+        //for (int k = 0; k < atomCounter + 1; k = k+1) {
+        //  if (abs(newPointY - atomsY[k]) < minimumRowDistance){
+            
+        //    newPointY = atomsY[k];
+        //  }
+        //}
+        
+        drawNewPoint(newPointX, newPointY, blockadeRadius, resolutionRadius);
+        //drawNewRow(newPointY);
+        
+        for (int k = 0; k < atomCounter ; k = k+1) {
+          
+          float distance = distance(newPointX, newPointY, atomsX[k], atomsY[k]);
+         
+          if (distance <= blockadeRadius){
+            
+            line(newPointX, newPointY, atomsX[k], atomsY[k]);
+            verticesFirst[vertexCounter]=k;
+            verticesSecond[vertexCounter]=atomCounter;
+            vertexCounter = vertexCounter + 1;
+          }
+        }
+      }
+    }
+    
+    println();
+    println();
+    println();
+    println();
+    println();
+    println();
+    println();
+    
+    println("Current graph status: ");
+
+    print(str(atomsX));
+ }
+
+
+
+void drawNewPoint(float newPointX, float newPointY, float blockadeRadius, float resolutionRadius) {
+  
+  // Drawing point and Blockade Radius
+  fill(204, 102, 0);
+  stroke(204, 102, 0);
+  circle(newPointX, newPointY, 10);
+  
+  noFill();
+  // circle(newPointX, newPointY, 2*blockadeRadius);
+  
+  
+  stroke(102, 204, 0);
+  // circle(newPointX, newPointY, 2*resolutionRadius);
+  
+  
+  // Addint the new point to the list of points
+  atomsX[atomCounter] = newPointX;
+  atomsY[atomCounter] = newPointY;
+  //print(atomsX[atomCounter]);
+  //print(" ");
+  //println(atomsY[atomCounter]);
+  atomCounter = atomCounter + 1;
+  
+}
+
+float distance(float x1, float y1, float x2, float y2){
+ return sqrt(sq(x2-x1) + sq(y2-y1));
+}
+
+
+void liebLattice(float latticeConstant){
+
+  for (float i = 0; i <= 750; i = i + latticeConstant){
+    line(0, i, 750, i);
+  }
+  
+  for (float i = 0; i <= 760; i = i + latticeConstant){
+    line(i,0 , i, 760);
+  }
+
+}
+
+void keyPressed(){
+  saveGraph();
+}
+
+void saveArrayInt(int[] array){
+  
+  int l = array.length;
+  output.print("[");
+  for (int i = 0 ; i < l ; i = i+1){
+    output.print(array[i]+", ");
+  }
+  output.println("]");
+  
+}
+void saveArrayFloat(float[] array){
+  
+  int l = array.length;
+  output.print("[");
+  for (int i = 0; i < l ; i = i+1){
+    output.print(array[i]+", ");
+  }
+  output.println("]");
+
+}
+
+
+void saveGraph(){
+  output.println("atomsX:");
+  saveArrayFloat(atomsX);
+ 
+  output.println("atomsY:");
+  saveArrayFloat(atomsY);
+  
+  output.println("verticesFirst:");
+  saveArrayInt(verticesFirst);
+  
+  output.println("verticesSecond:");
+  saveArrayInt(verticesSecond);
+  
+  output.flush(); // Writes the remaining data to the file
+  output.close(); // Finishes the file
+  exit(); // Stops the program
+}
